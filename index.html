@@ -32,6 +32,7 @@
     </div>
 
     <script>
+        // Your specific Firebase project keys
         const firebaseConfig = {
             apiKey: "AIzaSyB8cTMmNey1vKuJNR_cUFTGFgyji288QVg",
             authDomain: "task-tracker-b006b.firebaseapp.com",
@@ -42,18 +43,22 @@
             measurementId: "G-3R5RPVV8FB"
         };
 
+        // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
         const provider = new firebase.auth.GoogleAuthProvider();
 
+        // Login Function
         function login() {
             auth.signInWithPopup(provider).catch(error => {
                 alert("Login Error: " + error.message);
             });
         }
 
+        // Logout Function
         function logout() { auth.signOut(); }
 
+        // Monitor Login State
         auth.onAuthStateChanged(user => {
             if (user) {
                 document.getElementById('loginView').style.display = 'none';
