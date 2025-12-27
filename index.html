@@ -1,9 +1,70 @@
-const firebaseConfig = {
-  apiKey: "AIzaSyB8cTMmNey1vKuJNR_cUFTGFgyji288QVg",
-  authDomain: "task-tracker-b006b.firebaseapp.com",
-  projectId: "task-tracker-b006b",
-  storageBucket: "task-tracker-b006b.firebasestorage.app",
-  messagingSenderId: "210105432648",
-  appId: "1:210105432648:web:c298bc139f513f384b367d",
-  measurementId: "G-3R5RPVV8FB"
-};
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sync Mission Control</title>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #020205; color: white; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; overflow: hidden; }
+        .card { background: rgba(20, 20, 30, 0.85); padding: 30px; border-radius: 20px; width: 400px; text-align: center; border: 1px solid rgba(0, 255, 204, 0.2); }
+        h2 { color: #00ffcc; text-transform: uppercase; letter-spacing: 2px; }
+        .login-btn { background: white; color: black; padding: 15px; border-radius: 10px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div id="loginView">
+            <h2>Mission Login</h2>
+            <div class="login-btn" onclick="login()">
+                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="20">
+                Sign in with Google
+            </div>
+        </div>
+        <div id="mainView" style="display:none;">
+            <h2>Access Granted</h2>
+            <p id="userName"></p>
+            <button onclick="logout()" style="background:red; color:white; border:none; padding:10px; border-radius:5px; cursor:pointer;">LOGOUT</button>
+        </div>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyB8cTMmNey1vKuJNR_cUFTGFgyji288QVg",
+            authDomain: "task-tracker-b006b.firebaseapp.com",
+            projectId: "task-tracker-b006b",
+            storageBucket: "task-tracker-b006b.firebasestorage.app",
+            messagingSenderId: "210105432648",
+            appId: "1:210105432648:web:c298bc139f513f384b367d",
+            measurementId: "G-3R5RPVV8FB"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const provider = new firebase.auth.GoogleAuthProvider();
+
+        function login() {
+            auth.signInWithPopup(provider).catch(error => {
+                alert("Error: " + error.message);
+            });
+        }
+
+        function logout() {
+            auth.signOut();
+        }
+
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                document.getElementById('loginView').style.display = 'none';
+                document.getElementById('mainView').style.display = 'block';
+                document.getElementById('userName').innerText = "Welcome, " + user.displayName;
+            } else {
+                document.getElementById('loginView').style.display = 'block';
+                document.getElementById('mainView').style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>
