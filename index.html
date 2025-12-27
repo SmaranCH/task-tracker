@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sync Mission Control</title>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <style>
+        body { 
+            font-family: 'Segoe UI', sans-serif; 
+            background: #020205; 
+            color: white; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            height: 100vh; 
+            margin: 0;
+            background: radial-gradient(ellipse at bottom, #1B2735 0%, #090A0F 100%);
+            overflow: hidden;
+        }
+
+        .stars {
+            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            width: 100%; height: 100%;
+            background: transparent url('https://www.transparenttextures.com/patterns/stardust.png') repeat top center;
+            z-index: -1;
+            animation: move-twinkle 200s linear infinite;
+        }
+
+        .card { 
+            background: rgba(20, 20, 30, 0.85); 
+            padding: 30px; 
+            border-radius: 20px; 
+            width: 500px; 
+            box-shadow: 0 0 40px rgba(0, 255, 204, 0.2); 
+            border: 1px solid rgba(0, 255, 204, 0.2);
+            backdrop-filter: blur(15px);
+            box-sizing: border-box;
+        }
+
+        #listView, #detailView, #loginView { display: none; }
+        .active-view { display: block !important; }
+
+        h2 { text-align: center; color: #00ffcc; text-transform: uppercase; letter-spacing: 4px; margin-top: 0; }
+        
+        .login-btn { 
+            background: white; color: black; padding: 15px; width: 100%; 
+            border-radius: 10px; font-weight: bold; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+        }
+
+        .progress-container { background: rgba(255, 255, 255, 0.1); border-radius: 20px; height: 12px; margin-bottom: 25px; overflow: hidden; }
+        #progress-bar { background: linear-gradient(90deg, #00f2fe, #4facfe); width: 0%; height: 100%; transition: width 0.6s ease; }
+
+        .input-group { display: flex; gap: 10px; margin-bottom: 10px; width: 100%; }
+        input[type="text"] { 
+            flex: 1; padding: 12px; border-radius: 8px; border: 1px solid rgba(0, 255, 204, 0.3); 
+            background: rgba(0, 0, 0, 0.5); color: white; outline: none;
+        }
+
+        .date-container {
+            background: rgba(0, 0, 0, 0.4); 
+            padding: 20px; 
+            border-radius: 12px; 
+            border: 1px solid rgba(0, 255, 204, 0.4);
+            margin: 20px 0;
+            box-shadow: inset 0 0 15px rgba(0, 255, 204, 0.1);
+        }
+
+        input[type="datetime-local"] {
+            width: 100%; background: transparent; border: none; color: #00ffcc;
+            font-size: 18px; font-family: monospace; font-weight: bold;
+            outline: none; text-align: center; color-scheme: dark;
+        }
+
+        button { cursor: pointer; transition: 0.3s; font-weight: bold; border-radius: 8px; border: none; }
+        #addBtn { background: #00ffcc; padding: 0 20px; color: #111; min-height: 43px; }
+        .back-btn { background: rgba(255, 255, 255, 0.1); color: white; padding: 8px 15px; margin-bottom: 15px; }
+        .logout-btn { background: transparent; color: #aaa; font-size: 10px; border: 1px solid #444; padding: 5px; float: right; }
+
+        ul { list-style: none; padding: 0; margin-top: 10px; max-height: 250px; overflow-y: auto; }
+        li { 
+            background: rgba(255, 255, 255, 0.03); margin: 10px 0; padding: 15px; 
+            border-radius: 10px; display: flex; justify-content: space-between; align-items: center;
+            border-left: 4px solid #4facfe;
+        }
+
+        .task-completed { opacity: 0.4; border-left: 4px solid #888 !important; text-decoration: line-through; }
+        .countdown { color: #ffcc00; font-weight: bold; text-align: center; margin: 15px 0; font-family: monospace; }
+        textarea { width: 100%; height: 80px; background: rgba(0,0,0,0.4); color: #fff; border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; padding: 12px; margin-top: 10px; resize: none; box-sizing: border-box;}
+    </style>
+</head>
+<body>
+
+<div class="stars"></div>
+
+<div class="card">
+    <div id="loginView" class="active-view">
+        <h2>Mission Login</h2>
+        <p style="text-align:center; color:#aaa; font-size:14px;">Sync your data across all devices.</p>
+        <div class="login-btn" onclick="login()">
+            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="20">
+            Sign in with Google
+        </div>
+    </div>
+
+    <div id="listView">
+        <button class="logout-btn" onclick="logout()">LOGOUT</button>
+        <h2>Mission Control</h2>
+        <div class="progress-container"><div id="progress-bar"></div></div>
+        <div class="input-group">
+            <input type="text" id="taskInput" placeholder="New objective..." onkeydown="if(event.key==='Enter') addTask()">
+            <button id="addBtn" onclick="addTask()">LAUNCH</button>
+        </div>
+        <ul id="taskList"></ul>
+    </div>
+
+    <div id="detailView">
+        <button class="back-btn" onclick="showList()">← BACK</button>
+        <h2 id="taskTitle">Task</h2>
+        <div class="countdown" id="timer">NO DEADLINE SET</div>
+        <div class="date-container">
+            <input type="datetime-local" id="dueInput" oninput="updateDueDate()">
+        </div>
+        <textarea id="taskNotes" oninput="saveNotes()" placeholder="Intelligence notes..."></textarea>
+        <button id="mainCompleteBtn" style="width:100%; padding:12px; margin-top:10px;" onclick="toggleTaskCompletion()">MARK COMPLETE</button>
+    </div>
+</div>
+
+<script>
+    // --- YOUR UNIQUE FIREBASE CONFIG ---
+    const firebaseConfig = {
+        apiKey: "AIzaSyB8cTMmNey1vKuJNR_cUFTGFgyji288QVg",
+        authDomain: "task-tracker-b006b.firebaseapp.com",
+        projectId: "task-tracker-b006b",
+        storageBucket: "task-tracker-b006b.firebasestorage.app",
+        messagingSenderId: "210106432648",
+        appId: "1:210106432648:web:c298bc139f513f384b367d",
+        measurementId: "G-3R5RPVV8FB"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+    const provider = new firebase.auth.GoogleAuthProvider();
+
+    let tasks = [];
+    let currentIdx = null;
+    let currentUser = null;
+
+    auth.onAuthStateChanged(user => {
+        if (user) {
+            currentUser = user;
+            showView('listView');
+            syncTasks();
+        } else {
+            showView('loginView');
+        }
+    });
+
+    function login() { auth.signInWithPopup(provider).catch(e => alert(e.message)); }
+    function logout() { auth.signOut(); }
+
+    function syncTasks() {
+        db.collection("users").doc(currentUser.uid).collection("tasks")
+            .onSnapshot(snapshot => {
+                tasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                render();
+            });
+    }
+
+    function addTask() {
+        const input = document.getElementById('taskInput');
+        if (!input.value.trim()) return;
+        db.collection("users").doc(currentUser.uid).collection("tasks").add({
+            text: input.value, notes: "", dueDate: "", completed: false, createdAt: Date.now()
+        });
+        input.value = '';
+    }
+
+    function updateDueDate() {
+        const val = document.getElementById('dueInput').value;
+        db.collection("users").doc(currentUser.uid).collection("tasks").doc(tasks[currentIdx].id).update({ dueDate: val });
+    }
+
+    function toggleTaskCompletion() {
+        const status = !tasks[currentIdx].completed;
+        db.collection("users").doc(currentUser.uid).collection("tasks").doc(tasks[currentIdx].id).update({ completed: status });
+    }
+
+    function saveNotes() {
+        const val = document.getElementById('taskNotes').value;
+        db.collection("users").doc(currentUser.uid).collection("tasks").doc(tasks[currentIdx].id).update({ notes: val });
+    }
+
+    function deleteTask(id) {
+        db.collection("users").doc(currentUser.uid).collection("tasks").doc(id).delete();
+    }
+
+    function render() {
+        const list = document.getElementById('taskList');
+        list.innerHTML = '';
+        tasks.sort((a,b) => a.completed - b.completed || a.createdAt - b.createdAt).forEach((task, index) => {
+            const li = document.createElement('li');
+            if (task.completed) li.classList.add('task-completed');
+            li.innerHTML = `<div><div style="font-weight:bold">${task.text}</div></div><div class="btn-group"><button style="background:#00f2fe; padding:8px;" onclick="enterTask(${index})">OPEN</button> <button style="color:#ff4d4d; background:none; border:1px solid #ff4d4d; padding:8px;" onclick="deleteTask('${task.id}')">X</button></div>`;
+            list.appendChild(li);
+        });
+        const finished = tasks.filter(t => t.completed).length;
+        document.getElementById('progress-bar').style.width = (tasks.length ? (finished/tasks.length)*100 : 0) + '%';
+    }
+
+    function enterTask(index) {
+        currentIdx = index;
+        showView('detailView');
+        document.getElementById('taskTitle').innerText = tasks[index].text;
+        document.getElementById('taskNotes').value = tasks[index].notes || "";
+        document.getElementById('dueInput').value = tasks[index].dueDate || "";
+        updateBtnUI();
+        startTimer();
+    }
+
+    function startTimer() {
+        setInterval(() => {
+            if (currentIdx === null || !tasks[currentIdx].dueDate) return;
+            const target = new Date(tasks[currentIdx].dueDate).getTime();
+            const diff = target - Date.now();
+            const timerEl = document.getElementById('timer');
+            if (diff <= 0) { timerEl.innerText = "EXPIRED"; return; }
+            const d = Math.floor(diff / 86400000);
+            const h = Math.floor((diff % 86400000) / 3600000);
+            const m = Math.floor((diff % 3600000) / 60000);
+            const s = Math.floor((diff % 60000) / 1000);
+            timerEl.innerText = `${d}d ${h}h ${m}m ${s}s`;
+        }, 1000);
+    }
+
+    function updateBtnUI() {
+        const btn = document.getElementById('mainCompleteBtn');
+        btn.innerText = tasks[currentIdx].completed ? "REOPEN" : "MARK COMPLETE";
+        btn.style.background = tasks[currentIdx].completed ? "#555" : "#00ffcc";
+    }
+
+    function showView(id) {
+        ['loginView', 'listView', 'detailView'].forEach(v => document.getElementById(v).classList.remove('active-view'));
+        document.getElementById(id).classList.add('active-view');
+    }
+
+    function showList() { currentIdx = null; showView('listView'); }
+</script>
+</body>
+</html>
