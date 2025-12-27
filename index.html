@@ -30,9 +30,7 @@
             <button onclick="logout()" style="background:transparent; color:#ff4d4d; border:1px solid #ff4d4d; padding:10px; border-radius:5px; cursor:pointer; margin-top:20px;">LOGOUT</button>
         </div>
     </div>
-
     <script>
-        // Your specific Firebase project keys
         const firebaseConfig = {
             apiKey: "AIzaSyB8cTMmNey1vKuJNR_cUFTGFgyji288QVg",
             authDomain: "task-tracker-b006b.firebaseapp.com",
@@ -42,23 +40,11 @@
             appId: "1:210105432648:web:c298bc139f513f384b367d",
             measurementId: "G-3R5RPVV8FB"
         };
-
-        // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
         const provider = new firebase.auth.GoogleAuthProvider();
-
-        // Login Function
-        function login() {
-            auth.signInWithPopup(provider).catch(error => {
-                alert("Login Error: " + error.message);
-            });
-        }
-
-        // Logout Function
+        function login() { auth.signInWithPopup(provider).catch(e => alert(e.message)); }
         function logout() { auth.signOut(); }
-
-        // Monitor Login State
         auth.onAuthStateChanged(user => {
             if (user) {
                 document.getElementById('loginView').style.display = 'none';
